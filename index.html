@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Garden of Your Story</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --soil: #3d2b1f;
+    --soil-light: #5c3d2e;
+    --grass: #2d6a2d;
+    --sky: #0a1628;
+    --sky-mid: #0d2040;
+    --moon: #f0e6c0;
+    --text-main: #f0ede6;
+    --text-muted: #b8a99a;
+    --gold: #c9a84c;
+    --petal-pink: #e8a0b0;
+    --petal-purple: #9b7fc8;
+    --petal-yellow: #e8d060;
+    --petal-white: #f0ede6;
+    --petal-red: #d85040;
+    --petal-blue: #6090d0;
+    --leaf: #4a9a4a;
+    --leaf-dark: #2d6a2d;
+    --bark: #7a5030;
+    --overlay: rgba(10,22,40,0.92);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Lato', sans-serif;
+    background: var(--sky);
+    color: var(--text-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── STARS ── */
+  #stars {
+    position: fixed; top: 0; left: 0; width: 100%; height: 60%;
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: relative; z-index: 10;
+    text-align: center;
+    padding: 3rem 2rem 1.5rem;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    color: var(--moon);
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+  }
+  header h1 em { color: var(--gold); font-style: italic; }
+  header p {
+    font-size: 1rem;
+    color: var(--text-muted);
+    margin-top: 0.75rem;
+    max-width: 500px;
+    margin-inline: auto;
+    line-height: 1.7;
+    font-weight: 300;
+  }
+  .plant-btn {
+    display: inline-block;
+    margin-top: 1.5rem;
+    background: none;
+    border: 1.5px solid var(--gold);
+    color: var(--gold);
+    font-family: 'Lato', sans-serif;
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.75rem 2rem;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .plant-btn:hover { background: var(--gold); color: var(--sky); }
+
+  /* ── GARDEN ── */
+  #garden-wrap {
+    position: relative;
+    z-index: 5;
+    min-height: 420px;
+    margin-top: 2rem;
+  }
+  #garden-canvas {
+    display: block;
+    width: 100%;
+    height: 420px;
+    cursor: pointer;
+  }
+  #garden-floor {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 80px;
+    background: linear-gradient(to bottom, var(--soil), #1a0e08);
+    z-index: 1;
+  }
+  .garden-hint {
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    padding: 0.5rem;
+    letter-spacing: 0.05em;
+    position: relative; z-index: 6;
+  }
+
+  /* ── MODAL OVERLAY ── */
+  .modal-bg {
+    display: none;
+    position: fixed; inset: 0;
+    background: var(--overlay);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    backdrop-filter: blur(4px);
+  }
+  .modal-bg.open { display: flex; }
+
+  .modal {
+    background: var(--sky-mid);
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 700px;
+    max-height: 92vh;
+    overflow-y: auto;
+    padding: 2rem;
+    position: relative;
+    animation: fadeUp 0.3s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .modal-close {
+    position: absolute; top: 1rem; right: 1.25rem;
+    background: none; border: none;
+    color: var(--text-muted); font-size: 1.5rem;
+    cursor: pointer; transition: color 0.2s;
+    line-height: 1;
+  }
+  .modal-close:hover { color: var(--text-main); }
+  .modal h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    color: var(--moon);
+    margin-bottom: 0.4rem;
+  }
+  .modal p.sub {
+    font-size: 0.85rem; color: var(--text-muted);
+    margin-bottom: 1.5rem; line-height: 1.6;
+  }
+
+  /* ── STEPS ── */
+  .steps { display: flex; gap: 0.5rem; margin-bottom: 2rem; }
+  .step {
+    flex: 1; height: 3px; background: rgba(255,255,255,0.1);
+    border-radius: 3px; transition: background 0.4s;
+  }
+  .step.done { background: var(--gold); }
+  .step.active { background: rgba(201,168,76,0.5); }
+
+  /* ── PLANT PICKER ── */
+  .plant-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .plant-option {
+    background: rgba(255,255,255,0.04);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 1rem 0.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+  }
+  .plant-option:hover { border-color: var(--gold); background: rgba(201,168,76,0.08); }
+  .plant-option.selected { border-color: var(--gold); background: rgba(201,168,76,0.15); }
+  .plant-option canvas { display: block; }
+  .plant-option span { font-size: 0.72rem; color: var(--text-muted); letter-spacing: 0.05em; text-transform: uppercase; }
+
+  /* ── COLOR PICKER ── */
+  .color-row {
+    display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.5rem;
+  }
+  .color-swatch {
+    width: 32px; height: 32px; border-radius: 50%;
+    cursor: pointer; border: 2px solid transparent;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .color-swatch:hover { transform: scale(1.15); }
+  .color-swatch.selected { border-color: white; transform: scale(1.2); }
+
+  /* ── DRAW CANVAS ── */
+  #draw-canvas {
+    display: block;
+    width: 100%;
+    aspect-ratio: 2 / 1;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    cursor: crosshair;
+    touch-action: none;
+    background: #0a1628;
+    margin-bottom: 1rem;
+  }
+  .draw-tools {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .draw-tools label { font-size: 0.8rem; color: var(--text-muted); }
+  .draw-tools input[type=range] { width: 80px; }
+  .tool-btn {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15);
+    color: var(--text-main); font-size: 0.75rem; padding: 0.35rem 0.9rem;
+    border-radius: 30px; cursor: pointer; transition: all 0.2s;
+    font-family: 'Lato', sans-serif;
+  }
+  .tool-btn:hover, .tool-btn.active { background: rgba(201,168,76,0.2); border-color: var(--gold); color: var(--gold); }
+
+  /* ── STORY TEXTAREA ── */
+  textarea {
+    width: 100%; min-height: 130px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    color: var(--text-main);
+    font-family: 'Lato', sans-serif;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    padding: 1rem;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 1rem;
+  }
+  textarea:focus { border-color: rgba(201,168,76,0.5); }
+  textarea::placeholder { color: rgba(184,169,154,0.5); }
+
+  /* ── LABEL ── */
+  .field-label {
+    display: block; font-size: 0.8rem; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--gold);
+    margin-bottom: 0.5rem; margin-top: 1rem;
+  }
+
+  /* ── BUTTONS ── */
+  .btn-row { display: flex; gap: 0.75rem; margin-top: 1.5rem; justify-content: flex-end; }
+  .btn-secondary {
+    background: none; border: 1px solid rgba(255,255,255,0.2);
+    color: var(--text-muted); padding: 0.65rem 1.5rem;
+    border-radius: 50px; cursor: pointer; font-family: 'Lato', sans-serif;
+    font-size: 0.85rem; transition: all 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--text-muted); color: var(--text-main); }
+  .btn-primary {
+    background: var(--gold); border: none;
+    color: var(--sky); padding: 0.65rem 2rem;
+    border-radius: 50px; cursor: pointer; font-family: 'Lato', sans-serif;
+    font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em;
+    transition: all 0.2s;
+  }
+  .btn-primary:hover { background: #e0be6a; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── STORY VIEW MODAL ── */
+  #story-modal .plant-display {
+    text-align: center; margin-bottom: 1.5rem;
+  }
+  #story-modal .plant-display canvas {
+    display: inline-block;
+    border-radius: 10px;
+  }
+  #story-modal .story-text {
+    font-size: 1rem; line-height: 1.8;
+    color: var(--text-main);
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    background: rgba(255,255,255,0.04);
+    border-left: 2px solid var(--gold);
+    padding: 1.25rem 1.5rem;
+    border-radius: 0 10px 10px 0;
+    margin-bottom: 1rem;
+  }
+  #story-modal .story-meta {
+    font-size: 0.78rem; color: var(--text-muted);
+    text-align: right; letter-spacing: 0.05em;
+  }
+
+  /* ── TOOLTIP ── */
+  #tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: rgba(13,32,64,0.95);
+    border: 1px solid rgba(201,168,76,0.4);
+    border-radius: 8px;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    max-width: 180px;
+    text-align: center;
+    z-index: 50;
+    display: none;
+    white-space: nowrap;
+    backdrop-filter: blur(4px);
+  }
+
+  /* ── COUNT ── */
+  .story-count {
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    padding-bottom: 2rem;
+    position: relative; z-index: 6;
+  }
+  .story-count span { color: var(--gold); font-weight: 700; }
+
+  /* ── LOADING ── */
+  .loading-dots::after {
+    content: ''; animation: dots 1.5s infinite;
+  }
+  @keyframes dots {
+    0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; }
+  }
+
+  /* ── NOTIFICATION ── */
+  #notif {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    background: rgba(13,32,64,0.97);
+    border: 1px solid rgba(201,168,76,0.4);
+    color: var(--text-main);
+    padding: 0.85rem 1.75rem;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    z-index: 999;
+    display: none;
+    backdrop-filter: blur(6px);
+    animation: notifIn 0.3s ease;
+  }
+  @keyframes notifIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+
+<header>
+  <h1>Garden of <em>Your Story</em></h1>
+  <p>Every story plants a flower. Every flower holds a soul. Click any bloom to read what they planted here.</p>
+  <button class="plant-btn" id="open-plant-btn">Plant your story ✦</button>
+</header>
+
+<div id="garden-wrap">
+  <canvas id="garden-canvas"></canvas>
+</div>
+<div class="garden-hint">hover a plant to see who planted it · click to read their story</div>
+<div class="story-count" id="story-count">Loading garden<span class="loading-dots"></span></div>
+
+<div id="tooltip"></div>
+<div id="notif"></div>
+
+<!-- ── PLANT MODAL ── -->
+<div class="modal-bg" id="plant-modal">
+  <div class="modal">
+    <button class="modal-close" id="close-plant">&times;</button>
+
+    <div class="steps">
+      <div class="step active" id="s1"></div>
+      <div class="step" id="s2"></div>
+      <div class="step" id="s3"></div>
+    </div>
+
+    <!-- Step 1: Choose plant type -->
+    <div id="step1">
+      <h2>Choose your plant</h2>
+      <p class="sub">What kind of life grew from your story?</p>
+      <div class="plant-grid" id="plant-type-grid"></div>
+      <div class="btn-row">
+        <button class="btn-primary" id="step1-next">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Draw & color -->
+    <div id="step2" style="display:none">
+      <h2>Draw & color your plant</h2>
+      <p class="sub">Use the canvas below to add your own marks — or leave it as is and choose a petal color.</p>
+
+      <span class="field-label">Petal Color</span>
+      <div class="color-row" id="color-row"></div>
+
+      <span class="field-label">Draw on your plant</span>
+      <div class="draw-tools">
+        <button class="tool-btn active" id="btn-draw">✏ Draw</button>
+        <button class="tool-btn" id="btn-erase">◻ Erase</button>
+        <label>Size <input type="range" id="brush-size" min="1" max="20" value="4"></label>
+        <button class="tool-btn" id="btn-undo">↩ Undo</button>
+        <button class="tool-btn" id="btn-clear-draw">Clear</button>
+      </div>
+      <canvas id="draw-canvas"></canvas>
+
+      <div class="btn-row">
+        <button class="btn-secondary" id="step2-back">← Back</button>
+        <button class="btn-primary" id="step2-next">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Story -->
+    <div id="step3" style="display:none">
+      <h2>Your story</h2>
+      <p class="sub">Share as much or as little as you feel safe sharing. You can be anonymous.</p>
+
+      <span class="field-label">Your name (optional)</span>
+      <input type="text" id="author-name" placeholder="Anonymous" style="
+        width:100%; background:rgba(255,255,255,0.04);
+        border:1px solid rgba(255,255,255,0.12); border-radius:10px;
+        color:var(--text-main); font-family:'Lato',sans-serif; font-size:0.95rem;
+        padding:0.65rem 1rem; outline:none; margin-bottom:0.5rem;
+        transition:border-color 0.2s;
+      ">
+
+      <span class="field-label">Your story</span>
+      <textarea id="story-text" placeholder="Write whatever you want to plant here. This is your space. There are no rules. Your words will grow in the garden for others to find…"></textarea>
+
+      <div class="btn-row">
+        <button class="btn-secondary" id="step3-back">← Back</button>
+        <button class="btn-primary" id="step3-submit">Plant it 🌱</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── STORY VIEW MODAL ── -->
+<div class="modal-bg" id="story-modal">
+  <div class="modal" style="max-width:520px">
+    <button class="modal-close" id="close-story">&times;</button>
+    <div class="plant-display">
+      <canvas id="story-plant-canvas" width="160" height="180"></canvas>
+    </div>
+    <div class="story-text" id="story-text-display"></div>
+    <div class="story-meta" id="story-meta-display"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// STORAGE  (shared across all visitors)
+// ══════════════════════════════════════════════
+const API_URL = "https://long-water-852e.jiyar080.workers.dev";
+
+async function loadStories() {
+  const r = await fetch(API_URL);
+  return await r.json();
+}
+
+async function saveStory(s) {
+  await fetch(API_URL,{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json"
+    },
+    body: JSON.stringify({
+      text: s.story,
+      plant: s.plantType,
+      x:0,
+      y:0
+    })
+  });
+}
+
+// ══════════════════════════════════════════════
+// STARS
+// ══════════════════════════════════════════════
+(function initStars() {
+  const c = document.getElementById('stars');
+  const ctx = c.getContext('2d');
+  function draw() {
+    c.width = window.innerWidth;
+    c.height = window.innerHeight * 0.6;
+    const n = Math.floor(c.width * c.height / 2000);
+    for (let i = 0; i < n; i++) {
+      const x = Math.random() * c.width;
+      const y = Math.random() * c.height;
+      const r = Math.random() * 1.2;
+      const a = 0.3 + Math.random() * 0.7;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(240,230,192,${a})`;
+      ctx.fill();
+    }
+  }
+  draw();
+  window.addEventListener('resize', draw);
+})();
+
+// ══════════════════════════════════════════════
+// PLANT TYPES
+// ══════════════════════════════════════════════
+const PLANT_TYPES = [
+  { id: 'wildflower', label: 'Wildflower' },
+  { id: 'rose',       label: 'Rose' },
+  { id: 'sunflower',  label: 'Sunflower' },
+  { id: 'tree',       label: 'Tree' },
+  { id: 'daisy',      label: 'Daisy' },
+  { id: 'cactus',     label: 'Cactus' },
+  { id: 'mushroom',   label: 'Mushroom' },
+  { id: 'vine',       label: 'Vine' },
+];
+
+const PETAL_COLORS = [
+  '#e8a0b0','#d85040','#e8d060','#4a9a4a','#6090d0',
+  '#9b7fc8','#f0a050','#f0ede6','#60b8b0','#d070a0',
+];
+
+// ══════════════════════════════════════════════
+// PLANT DRAWING
+// ══════════════════════════════════════════════
+function drawPlant(ctx, type, color, x, y, scale, userLayer) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
+
+  const c = color || '#e8a0b0';
+  const bark = '#7a5030';
+  const leaf = '#4a9a4a';
+  const leafD = '#2d6a2d';
+
+  if (type === 'wildflower') {
+    // stem
+    ctx.strokeStyle = leaf; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.bezierCurveTo(-5,-20,5,-40,0,-70); ctx.stroke();
+    // leaves
+    ctx.fillStyle = leaf;
+    ctx.beginPath(); ctx.ellipse(-8,-30,8,4,Math.PI/4,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(8,-45,8,4,-Math.PI/4,0,Math.PI*2); ctx.fill();
+    // petals
+    for (let i = 0; i < 6; i++) {
+      ctx.save(); ctx.translate(0,-70); ctx.rotate((i/6)*Math.PI*2);
+      ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(0,-10,5,10,0,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+    ctx.fillStyle = '#f0e060';
+    ctx.beginPath(); ctx.arc(0,-70,7,0,Math.PI*2); ctx.fill();
+
+  } else if (type === 'rose') {
+    ctx.strokeStyle = leaf; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.bezierCurveTo(10,-25,5,-45,0,-65); ctx.stroke();
+    ctx.fillStyle = leafD;
+    ctx.beginPath(); ctx.ellipse(-10,-35,10,5,Math.PI/3,0,Math.PI*2); ctx.fill();
+    // rose bloom
+    const darkC = c;
+    for (let r = 0; r < 3; r++) {
+      const nr = 5 - r;
+      for (let i = 0; i < nr; i++) {
+        ctx.save(); ctx.translate(0,-68); ctx.rotate((i/nr)*Math.PI*2 + r*0.3);
+        ctx.fillStyle = c;
+        ctx.globalAlpha = 0.7 + r*0.1;
+        ctx.beginPath(); ctx.ellipse(0,-(6-r*1.5),4+r,(7-r),0,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+    }
+    ctx.globalAlpha = 1;
+
+  } else if (type === 'sunflower') {
+    ctx.strokeStyle = '#6a8a20'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-75); ctx.stroke();
+    ctx.fillStyle = '#6a8a20';
+    ctx.beginPath(); ctx.ellipse(-8,-40,9,5,Math.PI/4,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(9,-55,9,5,-Math.PI/4,0,Math.PI*2); ctx.fill();
+    for (let i = 0; i < 12; i++) {
+      ctx.save(); ctx.translate(0,-78); ctx.rotate((i/12)*Math.PI*2);
+      ctx.fillStyle = '#e8c030';
+      ctx.beginPath(); ctx.ellipse(0,-11,4,11,0,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+    ctx.fillStyle = '#4a2800';
+    ctx.beginPath(); ctx.arc(0,-78,10,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#6a4010';
+    ctx.beginPath(); ctx.arc(0,-78,7,0,Math.PI*2); ctx.fill();
+
+  } else if (type === 'tree') {
+    ctx.strokeStyle = bark; ctx.lineWidth = 5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-45); ctx.stroke();
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(0,-25); ctx.lineTo(-18,-45); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-35); ctx.lineTo(16,-50); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-45); ctx.lineTo(-12,-62); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-45); ctx.lineTo(10,-65); ctx.stroke();
+    // canopy
+    ctx.fillStyle = leaf; ctx.globalAlpha = 0.85;
+    ctx.beginPath(); ctx.arc(-18,-47,10,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(16,-52,9,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-12,-64,8,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(10,-67,9,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(0,-73,10,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+    // flowers
+    const pts = [[-18,-47],[16,-52],[-12,-64],[10,-67],[0,-73]];
+    pts.forEach(([px,py]) => {
+      for (let i = 0; i < 4; i++) {
+        ctx.save(); ctx.translate(px,py); ctx.rotate((i/4)*Math.PI*2);
+        ctx.fillStyle = c; ctx.globalAlpha = 0.7;
+        ctx.beginPath(); ctx.ellipse(0,-5,2,5,0,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+    });
+    ctx.globalAlpha = 1;
+
+  } else if (type === 'daisy') {
+    ctx.strokeStyle = leaf; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.bezierCurveTo(-4,-20,4,-40,0,-60); ctx.stroke();
+    ctx.fillStyle = leaf;
+    ctx.beginPath(); ctx.ellipse(-6,-25,7,3,Math.PI/4,0,Math.PI*2); ctx.fill();
+    for (let i = 0; i < 8; i++) {
+      ctx.save(); ctx.translate(0,-62); ctx.rotate((i/8)*Math.PI*2);
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.ellipse(0,-9,3,9,0,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+    ctx.fillStyle = '#f8e840';
+    ctx.beginPath(); ctx.arc(0,-62,6,0,Math.PI*2); ctx.fill();
+
+  } else if (type === 'cactus') {
+    ctx.fillStyle = '#50a050';
+    ctx.beginPath(); ctx.roundRect(-8,0,16,-65,4); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(-18,-45,14,-20,4); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(4,-35,14,-18,4); ctx.fill();
+    // spines
+    ctx.strokeStyle = '#e0e0a0'; ctx.lineWidth = 0.8;
+    for (let i = 0; i < 5; i++) {
+      const sy = -10 - i*12;
+      ctx.beginPath(); ctx.moveTo(-8,sy); ctx.lineTo(-13,sy-3); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(8,sy); ctx.lineTo(13,sy-3); ctx.stroke();
+    }
+    // flower on top
+    for (let i = 0; i < 5; i++) {
+      ctx.save(); ctx.translate(0,-67); ctx.rotate((i/5)*Math.PI*2);
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.ellipse(0,-6,3,6,0,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+    ctx.fillStyle = '#f0e060';
+    ctx.beginPath(); ctx.arc(0,-67,4,0,Math.PI*2); ctx.fill();
+
+  } else if (type === 'mushroom') {
+    ctx.fillStyle = '#d0b090';
+    ctx.beginPath(); ctx.roundRect(-5,0,10,-25,2); ctx.fill();
+    ctx.fillStyle = c;
+    ctx.beginPath();
+    ctx.ellipse(0,-26,20,16,0,0,Math.PI,true);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath(); ctx.arc(-7,-30,3,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(4,-26,2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-1,-36,2.5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath(); ctx.roundRect(-6,-26,30,8,3); ctx.fill();
+    // little details
+    ctx.fillStyle = '#d0b090';
+    ctx.beginPath(); ctx.roundRect(-5,-25,10,-3,1); ctx.fill();
+
+  } else if (type === 'vine') {
+    ctx.strokeStyle = leaf; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    const pts2 = [[0,0],[-8,-18],[4,-34],[-6,-50],[2,-68]];
+    ctx.beginPath(); ctx.moveTo(pts2[0][0],pts2[0][1]);
+    for (let i = 1; i < pts2.length; i++) ctx.lineTo(pts2[i][0],pts2[i][1]);
+    ctx.stroke();
+    // tendrils
+    [[0,-15],[-4,-30],[2,-48]].forEach(([lx,ly]) => {
+      ctx.strokeStyle = leafD; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(lx,ly);
+      ctx.bezierCurveTo(lx+15,ly-5,lx+18,ly-15,lx+12,ly-18); ctx.stroke();
+    });
+    // blooms
+    pts2.slice(1).forEach(([px,py]) => {
+      for (let i = 0; i < 4; i++) {
+        ctx.save(); ctx.translate(px,py); ctx.rotate((i/4)*Math.PI*2);
+        ctx.fillStyle = c;
+        ctx.beginPath(); ctx.ellipse(0,-5,2.5,5,0,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+      ctx.fillStyle = '#f8e840';
+      ctx.beginPath(); ctx.arc(px,py,3,0,Math.PI*2); ctx.fill();
+    });
+  }
+
+  ctx.restore();
+
+  // apply user drawing layer
+  if (userLayer) {
+    const img = new Image();
+    img.onload = () => {
+      ctx.save(); ctx.translate(x - 40*scale, y - 95*scale);
+      ctx.scale(scale, scale); ctx.drawImage(img, 0, 0); ctx.restore();
+    };
+    img.src = userLayer;
+  }
+}
+
+// ══════════════════════════════════════════════
+// GARDEN CANVAS
+// ══════════════════════════════════════════════
+const gardenCanvas = document.getElementById('garden-canvas');
+const gardenCtx = gardenCanvas.getContext('2d');
+let gardenPlants = [];
+let gardenHitAreas = [];
+
+function resizeGarden() {
+  gardenCanvas.width = gardenCanvas.offsetWidth;
+  gardenCanvas.height = gardenCanvas.offsetHeight;
+  renderGarden();
+}
+
+function renderGarden() {
+  const W = gardenCanvas.width, H = gardenCanvas.height;
+  gardenCtx.clearRect(0, 0, W, H);
+
+  // sky gradient
+  const sky = gardenCtx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0, '#0a1628');
+  sky.addColorStop(0.65, '#0d2040');
+  sky.addColorStop(0.75, '#1a3010');
+  sky.addColorStop(1, '#3d2b1f');
+  gardenCtx.fillStyle = sky; gardenCtx.fillRect(0,0,W,H);
+
+  // moon
+  gardenCtx.save();
+  const mg = gardenCtx.createRadialGradient(W*0.85,H*0.12,0,W*0.85,H*0.12,60);
+  mg.addColorStop(0,'rgba(240,230,192,0.15)');
+  mg.addColorStop(1,'rgba(240,230,192,0)');
+  gardenCtx.fillStyle = mg; gardenCtx.fillRect(0,0,W,H);
+  gardenCtx.beginPath(); gardenCtx.arc(W*0.85,H*0.12,22,0,Math.PI*2);
+  gardenCtx.fillStyle = '#f0e6c0'; gardenCtx.fill();
+  gardenCtx.restore();
+
+  // ground
+  const groundY = H - 80;
+  const gnd = gardenCtx.createLinearGradient(0,groundY,0,H);
+  gnd.addColorStop(0,'#2d6a2d'); gnd.addColorStop(0.2,'#3d2b1f'); gnd.addColorStop(1,'#1a0e08');
+  gardenCtx.fillStyle = gnd;
+  gardenCtx.beginPath(); gardenCtx.moveTo(0,groundY);
+  // wavy ground
+  for (let x = 0; x <= W; x += 40) {
+    gardenCtx.lineTo(x, groundY + Math.sin(x/80)*8);
+  }
+  gardenCtx.lineTo(W,H); gardenCtx.lineTo(0,H); gardenCtx.closePath(); gardenCtx.fill();
+
+  // grass tufts
+  gardenCtx.strokeStyle = '#4a9a4a'; gardenCtx.lineWidth = 1.5; gardenCtx.lineCap = 'round';
+  for (let x = 10; x < W; x += 18) {
+    const base = groundY + Math.sin(x/80)*8;
+    gardenCtx.beginPath(); gardenCtx.moveTo(x,base); gardenCtx.lineTo(x-3,base-8); gardenCtx.stroke();
+    gardenCtx.beginPath(); gardenCtx.moveTo(x+4,base); gardenCtx.lineTo(x+2,base-10); gardenCtx.stroke();
+    gardenCtx.beginPath(); gardenCtx.moveTo(x+8,base); gardenCtx.lineTo(x+6,base-7); gardenCtx.stroke();
+  }
+
+  gardenHitAreas = [];
+
+  if (gardenPlants.length === 0) {
+    gardenCtx.save();
+    gardenCtx.font = '400 0.85rem Lato, sans-serif';
+    gardenCtx.fillStyle = 'rgba(184,169,154,0.5)';
+    gardenCtx.textAlign = 'center';
+    gardenCtx.fillText('The garden awaits its first story…', W/2, H*0.45);
+    gardenCtx.restore();
+    return;
+  }
+
+  const n = gardenPlants.length;
+  // spread across width
+  gardenPlants.forEach((plant, i) => {
+    const slot = W / (n + 1);
+    const baseX = slot * (i + 1) + (Math.sin(i * 2.5) * slot * 0.2);
+    const baseY = groundY + Math.sin(baseX/80)*8;
+    const scale = 0.65 + Math.random() * 0.0; // deterministic
+    const sc = 0.65 + ((i * 17) % 5) * 0.07;
+
+    gardenCtx.save();
+    drawPlant(gardenCtx, plant.plantType, plant.color, baseX, baseY, sc, null);
+    gardenCtx.restore();
+
+    gardenHitAreas.push({ x: baseX, y: baseY - 80*sc, w: 40*sc, h: 90*sc, plant });
+  });
+}
+
+// tooltip & click
+const tooltip = document.getElementById('tooltip');
+gardenCanvas.addEventListener('mousemove', e => {
+  const rect = gardenCanvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  let hit = null;
+  for (const h of gardenHitAreas) {
+    if (mx >= h.x - h.w && mx <= h.x + h.w && my >= h.y - 10 && my <= h.y + h.h + 30) {
+      hit = h; break;
+    }
+  }
+  if (hit) {
+    tooltip.style.display = 'block';
+    tooltip.style.left = (e.clientX + 12) + 'px';
+    tooltip.style.top = (e.clientY - 20) + 'px';
+    const name = hit.plant.author || 'Anonymous';
+    tooltip.textContent = name + ' · ' + hit.plant.plantType;
+    gardenCanvas.style.cursor = 'pointer';
+  } else {
+    tooltip.style.display = 'none';
+    gardenCanvas.style.cursor = 'default';
+  }
+});
+gardenCanvas.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+
+gardenCanvas.addEventListener('click', e => {
+  const rect = gardenCanvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  for (const h of gardenHitAreas) {
+    if (mx >= h.x - h.w && mx <= h.x + h.w && my >= h.y - 10 && my <= h.y + h.h + 30) {
+      openStoryModal(h.plant); return;
+    }
+  }
+});
+
+window.addEventListener('resize', resizeGarden);
+
+// ══════════════════════════════════════════════
+// PLANT OPTION PREVIEWS
+// ══════════════════════════════════════════════
+function buildPlantGrid() {
+  const grid = document.getElementById('plant-type-grid');
+  PLANT_TYPES.forEach(pt => {
+    const div = document.createElement('div');
+    div.className = 'plant-option';
+    div.dataset.type = pt.id;
+    const c = document.createElement('canvas');
+    c.width = 70; c.height = 90;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0,0,70,90);
+    drawPlant(ctx, pt.id, '#e8a0b0', 35, 88, 0.75, null);
+    div.appendChild(c);
+    const lbl = document.createElement('span');
+    lbl.textContent = pt.label;
+    div.appendChild(lbl);
+    div.addEventListener('click', () => {
+      document.querySelectorAll('.plant-option').forEach(x => x.classList.remove('selected'));
+      div.classList.add('selected');
+      selectedType = pt.id;
+      refreshDrawPreview();
+    });
+    grid.appendChild(div);
+  });
+  // select first
+  grid.firstChild.classList.add('selected');
+  selectedType = PLANT_TYPES[0].id;
+}
+
+function buildColorRow() {
+  const row = document.getElementById('color-row');
+  PETAL_COLORS.forEach((col, i) => {
+    const sw = document.createElement('div');
+    sw.className = 'color-swatch' + (i === 0 ? ' selected' : '');
+    sw.style.background = col;
+    sw.addEventListener('click', () => {
+      document.querySelectorAll('.color-swatch').forEach(x => x.classList.remove('selected'));
+      sw.classList.add('selected');
+      selectedColor = col;
+      refreshDrawPreview();
+    });
+    row.appendChild(sw);
+  });
+  selectedColor = PETAL_COLORS[0];
+}
+
+// ══════════════════════════════════════════════
+// DRAW CANVAS
+// ══════════════════════════════════════════════
+const drawCanvas = document.getElementById('draw-canvas');
+const drawCtx = drawCanvas.getContext('2d');
+let drawMode = 'draw';
+let isDrawing = false;
+let lastX = 0, lastY = 0;
+let undoStack = [];
+let selectedType = 'wildflower';
+let selectedColor = PETAL_COLORS[0];
+
+function initDrawCanvas() {
+  drawCanvas.width = drawCanvas.offsetWidth;
+  drawCanvas.height = drawCanvas.offsetWidth / 2;
+  refreshDrawPreview();
+}
+
+function refreshDrawPreview() {
+  drawCanvas.width = drawCanvas.offsetWidth;
+  drawCanvas.height = drawCanvas.offsetWidth / 2 || 200;
+  drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+  // background
+  drawCtx.fillStyle = '#0a1628';
+  drawCtx.fillRect(0,0,drawCanvas.width,drawCanvas.height);
+  // ground line
+  drawCtx.strokeStyle = '#4a9a4a'; drawCtx.lineWidth = 1;
+  drawCtx.beginPath();
+  drawCtx.moveTo(0, drawCanvas.height - 30);
+  drawCtx.lineTo(drawCanvas.width, drawCanvas.height - 30);
+  drawCtx.stroke();
+  // plant preview
+  drawPlant(drawCtx, selectedType, selectedColor,
+    drawCanvas.width / 2, drawCanvas.height - 30, 0.9, null);
+  undoStack = [];
+}
+
+function getPos(e) {
+  const rect = drawCanvas.getBoundingClientRect();
+  const scaleX = drawCanvas.width / rect.width;
+  const scaleY = drawCanvas.height / rect.height;
+  const touch = e.touches ? e.touches[0] : e;
+  return [(touch.clientX - rect.left) * scaleX, (touch.clientY - rect.top) * scaleY];
+}
+
+drawCanvas.addEventListener('pointerdown', e => {
+  isDrawing = true;
+  [lastX, lastY] = getPos(e);
+  undoStack.push(drawCtx.getImageData(0,0,drawCanvas.width,drawCanvas.height));
+  if (undoStack.length > 30) undoStack.shift();
+});
+drawCanvas.addEventListener('pointermove', e => {
+  if (!isDrawing) return;
+  const [x,y] = getPos(e);
+  drawCtx.lineWidth = parseInt(document.getElementById('brush-size').value);
+  drawCtx.lineCap = 'round';
+  drawCtx.lineJoin = 'round';
+  if (drawMode === 'draw') {
+    drawCtx.globalCompositeOperation = 'source-over';
+    drawCtx.strokeStyle = selectedColor;
+  } else {
+    drawCtx.globalCompositeOperation = 'destination-out';
+    drawCtx.strokeStyle = 'rgba(0,0,0,1)';
+  }
+  drawCtx.beginPath(); drawCtx.moveTo(lastX,lastY); drawCtx.lineTo(x,y); drawCtx.stroke();
+  [lastX,lastY] = [x,y];
+});
+drawCanvas.addEventListener('pointerup', () => { isDrawing = false; drawCtx.globalCompositeOperation = 'source-over'; });
+drawCanvas.addEventListener('pointerleave', () => { isDrawing = false; });
+
+document.getElementById('btn-draw').addEventListener('click', () => {
+  drawMode = 'draw';
+  document.getElementById('btn-draw').classList.add('active');
+  document.getElementById('btn-erase').classList.remove('active');
+});
+document.getElementById('btn-erase').addEventListener('click', () => {
+  drawMode = 'erase';
+  document.getElementById('btn-erase').classList.add('active');
+  document.getElementById('btn-draw').classList.remove('active');
+});
+document.getElementById('btn-undo').addEventListener('click', () => {
+  if (undoStack.length) drawCtx.putImageData(undoStack.pop(), 0, 0);
+});
+document.getElementById('btn-clear-draw').addEventListener('click', refreshDrawPreview);
+
+// ══════════════════════════════════════════════
+// MODAL FLOW
+// ══════════════════════════════════════════════
+let currentStep = 1;
+
+function showStep(n) {
+  [1,2,3].forEach(i => {
+    document.getElementById('step'+i).style.display = i === n ? 'block' : 'none';
+    document.getElementById('s'+i).className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+  });
+  currentStep = n;
+  if (n === 2) {
+    setTimeout(initDrawCanvas, 50);
+  }
+}
+
+document.getElementById('open-plant-btn').addEventListener('click', () => {
+  document.getElementById('plant-modal').classList.add('open');
+  showStep(1);
+});
+document.getElementById('close-plant').addEventListener('click', () => {
+  document.getElementById('plant-modal').classList.remove('open');
+});
+document.getElementById('plant-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('plant-modal')) {
+    document.getElementById('plant-modal').classList.remove('open');
+  }
+});
+
+document.getElementById('step1-next').addEventListener('click', () => {
+  if (!selectedType) return showNotif('Please choose a plant type');
+  showStep(2);
+});
+document.getElementById('step2-back').addEventListener('click', () => showStep(1));
+document.getElementById('step2-next').addEventListener('click', () => showStep(3));
+document.getElementById('step3-back').addEventListener('click', () => showStep(2));
+
+document.getElementById('step3-submit').addEventListener('click', async () => {
+  const text = document.getElementById('story-text').value.trim();
+  if (!text) return showNotif('Please write your story before planting');
+  const btn = document.getElementById('step3-submit');
+  btn.disabled = true; btn.textContent = 'Planting…';
+
+  const story = {
+    id: Date.now() + '-' + Math.random().toString(36).slice(2),
+    plantType: selectedType,
+    color: selectedColor,
+    drawingData: drawCanvas.toDataURL('image/png'),
+    story: text,
+    author: document.getElementById('author-name').value.trim() || 'Anonymous',
+    date: new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }),
+  };
+
+  await saveStory(story);
+  gardenPlants = await loadStories();
+  renderGarden();
+  updateCount();
+
+  document.getElementById('plant-modal').classList.remove('open');
+  document.getElementById('story-text').value = '';
+  document.getElementById('author-name').value = '';
+  btn.disabled = false; btn.textContent = 'Plant it 🌱';
+  showNotif('Your story has bloomed in the garden 🌸');
+});
+
+// ══════════════════════════════════════════════
+// STORY VIEW MODAL
+// ══════════════════════════════════════════════
+function openStoryModal(plant) {
+  const sc = document.getElementById('story-plant-canvas');
+  sc.width = 160; sc.height = 180;
+  const sCtx = sc.getContext('2d');
+  sCtx.fillStyle = '#0d2040';
+  sCtx.fillRect(0,0,160,180);
+  sCtx.strokeStyle = '#4a9a4a'; sCtx.lineWidth = 1;
+  sCtx.beginPath(); sCtx.moveTo(0,160); sCtx.lineTo(160,160); sCtx.stroke();
+  drawPlant(sCtx, plant.plantType, plant.color, 80, 160, 0.85, null);
+
+  document.getElementById('story-text-display').textContent = plant.story;
+  document.getElementById('story-meta-display').textContent =
+    'Planted by ' + (plant.author || 'Anonymous') + ' · ' + (plant.date || '');
+
+  document.getElementById('story-modal').classList.add('open');
+}
+
+document.getElementById('close-story').addEventListener('click', () => {
+  document.getElementById('story-modal').classList.remove('open');
+});
+document.getElementById('story-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('story-modal')) {
+    document.getElementById('story-modal').classList.remove('open');
+  }
+});
+
+// ══════════════════════════════════════════════
+// NOTIFICATION
+// ══════════════════════════════════════════════
+let notifTimer;
+function showNotif(msg) {
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.style.display = 'block';
+  clearTimeout(notifTimer);
+  notifTimer = setTimeout(() => { n.style.display = 'none'; }, 3500);
+}
+
+// ══════════════════════════════════════════════
+// COUNT
+// ══════════════════════════════════════════════
+function updateCount() {
+  const el = document.getElementById('story-count');
+  const n = gardenPlants.length;
+  if (n === 0) el.innerHTML = 'No stories yet — be the first to plant one';
+  else el.innerHTML = `<span>${n}</span> ${n === 1 ? 'story' : 'stories'} growing in this garden`;
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+(async function init() {
+  buildPlantGrid();
+  buildColorRow();
+  resizeGarden();
+
+  gardenPlants = await loadStories();
+  renderGarden();
+  updateCount();
+  document.getElementById('story-count').innerHTML = document.getElementById('story-count').innerHTML.replace('<span class="loading-dots"></span>', '');
+  updateCount();
+})();
+</script>
+</body>
+</html>
