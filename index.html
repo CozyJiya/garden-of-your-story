@@ -790,7 +790,7 @@ function renderGarden() {
     const sc = 0.65 + ((i * 17) % 5) * 0.07;
 
     gardenCtx.save();
-    drawPlant(gardenCtx, plant.plantType, plant.color, baseX, baseY, sc, null);
+    drawPlant(gardenCtx, plant.plant || plant.plantType, plant.color, baseX, baseY, sc, null);
     gardenCtx.restore();
 
     gardenHitAreas.push({ x: baseX, y: baseY - 80*sc, w: 40*sc, h: 90*sc, plant });
@@ -813,7 +813,7 @@ gardenCanvas.addEventListener('mousemove', e => {
     tooltip.style.left = (e.clientX + 12) + 'px';
     tooltip.style.top = (e.clientY - 20) + 'px';
     const name = hit.plant.author || 'Anonymous';
-    tooltip.textContent = name + ' · ' + hit.plant.plantType;
+    tooltip.textContent = name + ' · ' + (hit.plant.plant || hit.plant.plantType);
     gardenCanvas.style.cursor = 'pointer';
   } else {
     tooltip.style.display = 'none';
@@ -1043,9 +1043,9 @@ function openStoryModal(plant) {
   sCtx.fillRect(0,0,160,180);
   sCtx.strokeStyle = '#4a9a4a'; sCtx.lineWidth = 1;
   sCtx.beginPath(); sCtx.moveTo(0,160); sCtx.lineTo(160,160); sCtx.stroke();
-  drawPlant(sCtx, plant.plantType, plant.color, 80, 160, 0.85, null);
+  drawPlant(sCtx, plant.plant || plant.plantType, plant.color, 80, 160, 0.85, null);
 
-  document.getElementById('story-text-display').textContent = plant.story;
+  document.getElementById('story-text-display').textContent = plant.text || plant.story;
   document.getElementById('story-meta-display').textContent =
     'Planted by ' + (plant.author || 'Anonymous') + ' · ' + (plant.date || '');
 
@@ -1099,4 +1099,5 @@ function updateCount() {
 })();
 </script>
 </body>
+
 </html>
