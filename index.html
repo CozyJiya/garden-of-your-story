@@ -382,23 +382,12 @@
     <div class="steps">
       <div class="step active" id="s1"></div>
       <div class="step" id="s2"></div>
-      <div class="step" id="s3"></div>
     </div>
 
-    <!-- Step 1: Choose plant type -->
+    <!-- Step 1: Draw & color -->
     <div id="step1">
-      <h2>Choose your plant</h2>
-      <p class="sub">What kind of life grew from your story?</p>
-      <div class="plant-grid" id="plant-type-grid"></div>
-      <div class="btn-row">
-        <button class="btn-primary" id="step1-next">Next →</button>
-      </div>
-    </div>
-
-    <!-- Step 2: Draw & color -->
-    <div id="step2" style="display:none">
       <h2>Draw & color your plant</h2>
-      <p class="sub">Use the canvas below to add your own marks — or leave it as is and choose a petal color.</p>
+      <p class="sub">Draw your own plant on the canvas below. Pick a color and let your imagination grow.</p>
 
       <span class="field-label">Petal Color</span>
       <div class="color-row" id="color-row"></div>
@@ -414,13 +403,12 @@
       <canvas id="draw-canvas"></canvas>
 
       <div class="btn-row">
-        <button class="btn-secondary" id="step2-back">← Back</button>
-        <button class="btn-primary" id="step2-next">Next →</button>
+        <button class="btn-primary" id="step1-next">Next →</button>
       </div>
     </div>
 
-    <!-- Step 3: Story -->
-    <div id="step3" style="display:none">
+    <!-- Step 2: Story -->
+    <div id="step2" style="display:none">
       <h2>Your story</h2>
       <p class="sub">Share as much or as little as you feel safe sharing. You can be anonymous.</p>
 
@@ -437,8 +425,8 @@
       <textarea id="story-text" placeholder="Write whatever you want to plant here. This is your space. There are no rules. Your words will grow in the garden for others to find…"></textarea>
 
       <div class="btn-row">
-        <button class="btn-secondary" id="step3-back">← Back</button>
-        <button class="btn-primary" id="step3-submit">Plant it 🌱</button>
+        <button class="btn-secondary" id="step2-back">← Back</button>
+        <button class="btn-primary" id="step2-submit">Plant it 🌱</button>
       </div>
     </div>
   </div>
@@ -790,7 +778,7 @@ function renderGarden() {
     const sc = 0.65 + ((i * 17) % 5) * 0.07;
 
     gardenCtx.save();
-    drawPlant(gardenCtx, plant.plant || plant.plantType, plant.color, baseX, baseY, sc, null);
+    drawPlant(gardenCtx, plant.plantType, plant.color, baseX, baseY, sc, null);
     gardenCtx.restore();
 
     gardenHitAreas.push({ x: baseX, y: baseY - 80*sc, w: 40*sc, h: 90*sc, plant });
@@ -813,7 +801,7 @@ gardenCanvas.addEventListener('mousemove', e => {
     tooltip.style.left = (e.clientX + 12) + 'px';
     tooltip.style.top = (e.clientY - 20) + 'px';
     const name = hit.plant.author || 'Anonymous';
-    tooltip.textContent = name + ' · ' + (hit.plant.plant || hit.plant.plantType);
+    tooltip.textContent = name + ' · ' + hit.plant.plantType;
     gardenCanvas.style.cursor = 'pointer';
   } else {
     tooltip.style.display = 'none';
@@ -875,7 +863,6 @@ function buildColorRow() {
       document.querySelectorAll('.color-swatch').forEach(x => x.classList.remove('selected'));
       sw.classList.add('selected');
       selectedColor = col;
-      refreshDrawPreview();
     });
     row.appendChild(sw);
   });
@@ -907,15 +894,6 @@ function refreshDrawPreview() {
   // background
   drawCtx.fillStyle = '#0a1628';
   drawCtx.fillRect(0,0,drawCanvas.width,drawCanvas.height);
-  // ground line
-  drawCtx.strokeStyle = '#4a9a4a'; drawCtx.lineWidth = 1;
-  drawCtx.beginPath();
-  drawCtx.moveTo(0, drawCanvas.height - 30);
-  drawCtx.lineTo(drawCanvas.width, drawCanvas.height - 30);
-  drawCtx.stroke();
-  // plant preview
-  drawPlant(drawCtx, selectedType, selectedColor,
-    drawCanvas.width / 2, drawCanvas.height - 30, 0.9, null);
   undoStack = [];
 }
 
@@ -973,12 +951,12 @@ document.getElementById('btn-clear-draw').addEventListener('click', refreshDrawP
 let currentStep = 1;
 
 function showStep(n) {
-  [1,2,3].forEach(i => {
+  [1,2].forEach(i => {
     document.getElementById('step'+i).style.display = i === n ? 'block' : 'none';
     document.getElementById('s'+i).className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
   });
   currentStep = n;
-  if (n === 2) {
+  if (n === 1) {
     setTimeout(initDrawCanvas, 50);
   }
 }
@@ -996,18 +974,13 @@ document.getElementById('plant-modal').addEventListener('click', e => {
   }
 });
 
-document.getElementById('step1-next').addEventListener('click', () => {
-  if (!selectedType) return showNotif('Please choose a plant type');
-  showStep(2);
-});
+document.getElementById('step1-next').addEventListener('click', () => showStep(2));
 document.getElementById('step2-back').addEventListener('click', () => showStep(1));
-document.getElementById('step2-next').addEventListener('click', () => showStep(3));
-document.getElementById('step3-back').addEventListener('click', () => showStep(2));
 
-document.getElementById('step3-submit').addEventListener('click', async () => {
+document.getElementById('step2-submit').addEventListener('click', async () => {
   const text = document.getElementById('story-text').value.trim();
   if (!text) return showNotif('Please write your story before planting');
-  const btn = document.getElementById('step3-submit');
+  const btn = document.getElementById('step2-submit');
   btn.disabled = true; btn.textContent = 'Planting…';
 
   const story = {
@@ -1043,9 +1016,9 @@ function openStoryModal(plant) {
   sCtx.fillRect(0,0,160,180);
   sCtx.strokeStyle = '#4a9a4a'; sCtx.lineWidth = 1;
   sCtx.beginPath(); sCtx.moveTo(0,160); sCtx.lineTo(160,160); sCtx.stroke();
-  drawPlant(sCtx, plant.plant || plant.plantType, plant.color, 80, 160, 0.85, null);
+  drawPlant(sCtx, plant.plantType, plant.color, 80, 160, 0.85, null);
 
-  document.getElementById('story-text-display').textContent = plant.text || plant.story;
+  document.getElementById('story-text-display').textContent = plant.story;
   document.getElementById('story-meta-display').textContent =
     'Planted by ' + (plant.author || 'Anonymous') + ' · ' + (plant.date || '');
 
@@ -1087,7 +1060,6 @@ function updateCount() {
 // INIT
 // ══════════════════════════════════════════════
 (async function init() {
-  buildPlantGrid();
   buildColorRow();
   resizeGarden();
 
@@ -1099,5 +1071,4 @@ function updateCount() {
 })();
 </script>
 </body>
-
 </html>
