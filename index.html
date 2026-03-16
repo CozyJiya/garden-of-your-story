@@ -445,6 +445,38 @@
 </div>
 
 <script>
+  document.getElementById('step2-submit').addEventListener('click', async () => {
+  const text = document.getElementById('story-text').value.trim();
+  if (!text) return showNotif('Please write your story before planting');
+  const btn = document.getElementById('step2-submit');
+  btn.disabled = true; btn.textContent = 'Planting…';
+
+  try {
+    const story = {
+      id: Date.now() + '-' + Math.random().toString(36).slice(2),
+      plantType: selectedType,
+      color: selectedColor,
+      drawingData: drawCanvas.toDataURL('image/png'),
+      story: text,
+      author: document.getElementById('author-name').value.trim() || 'Anonymous',
+      date: new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }),
+    };
+
+    await saveStory(story);
+    gardenPlants = await loadStories();
+    renderGarden();
+    updateCount();
+    document.getElementById('plant-modal').classList.remove('open');
+    document.getElementById('story-text').value = '';
+    document.getElementById('author-name').value = '';
+    showNotif('Your story has bloomed in the garden 🌸');
+  } catch (err) {
+    console.error('Plant error:', err);
+    showNotif('Error: ' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Plant it 🌱';
+  }
+});
 // ══════════════════════════════════════════════
 // STORAGE  (shared across all visitors)
 // ══════════════════════════════════════════════
